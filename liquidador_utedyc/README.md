@@ -1,42 +1,104 @@
-# Liquidador Domestico UTEDYC 183/92
+# Liquidador UTEDYC 183/92
 
-Proyecto para estimar liquidaciones de sueldo segun convenio 183/92 usando:
+Aplicación de apoyo para estimar la próxima liquidación de sueldo bajo el convenio UTEDYC 183/92.
 
-- Basicos por categoria y mes.
-- Adicionales porcentuales sobre categoria B.
-- Adicionales variables por asistencia.
-- Descuentos legales y sindicales.
+El objetivo del proyecto es acercar una liquidación probable a partir de:
+
+- básicos por categoría y período,
+- adicionales convencionales,
+- novedades del período 20-20,
+- descuentos legales obligatorios,
+- comparación entre distintos meses,
+- contraste posterior contra recibos reales para medir precisión.
+
+No pretende reemplazar la liquidación oficial del empleador ni el asesoramiento profesional. La intención es ofrecer una herramienta práctica de control, simulación y auditoría personal.
+
+## Alcance actual
+
+El proyecto ya contempla:
+
+- cálculo por categoría y mes,
+- adicionales porcentuales sobre categoría B,
+- cálculo dinámico de feriados trabajados,
+- cálculo dinámico de horas extras,
+- cálculo de franco trabajado,
+- adicionales fijos y condiciones particulares,
+- descuento sindical obligatorio según criterio actual del proyecto,
+- simulación desde CLI,
+- simulación desde interfaz Streamlit,
+- base preparada para calibrar contra recibos reales.
+
+## Objetivo de evolución
+
+La idea de fondo es que cada trabajador pueda cargar su situación particular y comparar el resultado de la app con su recibo real. Con suficientes casos validados, el proyecto puede evolucionar hacia:
+
+- un registro local de participantes,
+- simulación masiva por mes,
+- medición de desvíos por concepto,
+- mejora progresiva de fórmulas y parámetros,
+- reportes de precisión por persona y por período.
+
+## Privacidad y datos sensibles
+
+Este repositorio público o remoto no debe incluir datos personales reales, recibos, imágenes, planillas ni legajos.
+
+La estrategia del proyecto es separar:
+
+- código y documentación aptos para publicar,
+- datos locales privados para pruebas y calibración,
+- recibos e imágenes fuera del flujo Git.
+
+Los datos privados de participantes pueden mantenerse en una carpeta local ignorada por Git para evitar publicación accidental.
 
 ## Uso por terminal
 
+Ejemplo de liquidación simple:
+
 ```bash
-python main.py --mes 2026-03 --categoria D --antiguedad 10 --titulo --maquina --permanencia --sindical --feriados 2 --nocturnos 6 --extras 0
+python3 main.py --mes 2026-03 --categoria D --antiguedad 10 --titulo --maquina --permanencia --feriados 2 --nocturnos 6 --extras 0
 ```
 
-Con ajuste de formula de feriado o valor manual:
+Ejemplo con valor manual de feriado:
 
 ```bash
-python main.py --mes 2026-01 --categoria D --antiguedad 10 --feriados 2 --coef-feriado 1.0
-python main.py --mes 2026-01 --categoria D --antiguedad 10 --feriados 2 --valor-feriado-manual 80000
+python3 main.py --mes 2026-01 --categoria D --antiguedad 10 --feriados 2 --valor-feriado-manual 80000
 ```
 
-Comparar impacto entre dos meses (ejemplo: fin de temporada):
+Ejemplo de comparación entre meses:
 
 ```bash
-python main.py --comparar --mes 2026-03 --mes-objetivo 2026-04 --categoria D --antiguedad 10 --titulo --maquina --permanencia --sindical --feriados 2 --nocturnos 6 --extras 0
+python3 main.py --comparar --mes 2026-03 --mes-objetivo 2026-04 --categoria D --antiguedad 10 --titulo --maquina --permanencia --feriados 2 --nocturnos 6 --extras 0
 ```
 
 ## Uso con Streamlit
 
+Desde la carpeta del proyecto:
+
 ```bash
-streamlit run app.py
+python3 -m streamlit run app.py
 ```
 
-## Notas de calibracion
+## Criterios de cálculo relevantes
 
-- El valor unitario de feriado se calcula por defecto como basico_categoria/25 y se actualiza automaticamente con aumentos del mes.
-- El COD 0229 usa por defecto la formula legal sueldo_mensual/25, con un multiplicador opcional para calibracion.
-- El COD 0281 se calcula por defecto como porcentaje del basico B del mes y se liquida una sola vez cuando hubo al menos un feriado trabajado en el periodo.
-- Si necesitas fijar un valor puntual (por ejemplo, una planilla nueva), podes usar valor feriado manual en CLI o Streamlit.
-- Los conceptos 0218 (quebranto), 0276 (exigencia operativa) y 0719 (refrigerio) se calculan automaticamente sobre la base categoria B del mes cuando estan activados para el empleado.
-- La escala 2026-04 se deja como escala puente para medir el efecto del cambio de plus de temporada (20% a 12%).
+- El valor del feriado trabajado se calcula sobre el básico de la categoría del mes.
+- El COD 0229 usa un multiplicador interno fijo de 2.0 sobre la fórmula sueldo mensual / 25.
+- El franco trabajado se calcula como 2 veces el valor unitario del feriado.
+- La hora extra se calcula dinámicamente a partir del básico de categoría del mes.
+- El COD 0281 se arrastra desde una base de referencia sobre categoría B.
+- El COD 0426 se considera obligatorio en esta versión.
+- La alícuota de ganancias queda fijada en 0.0 para esta etapa del proyecto.
+- Algunos conceptos pueden seguir requiriendo calibración con recibos reales, especialmente aquellos que no deriven linealmente del básico.
+
+## Estructura del proyecto
+
+- `data/`: escalas, adicionales y feriados.
+- `logic/`: modelos y motor de cálculo.
+- `tests/`: pruebas automáticas de regresión.
+- `app.py`: interfaz Streamlit.
+- `main.py`: entrada por línea de comandos.
+
+## Estado del proyecto
+
+Proyecto en evolución activa.
+
+La prioridad actual es mejorar la precisión usando casos reales locales, pero sin publicar información sensible en el repositorio remoto.

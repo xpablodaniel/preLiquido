@@ -91,5 +91,53 @@ class CalculosTestCase(unittest.TestCase):
         self.assertAlmostEqual(cod_0719["importe"], 566078.40, places=2)
 
 
+    def test_simulacion_camarero_mar26(self) -> None:
+        """Simulacion perfil camarero: cat B, 8 anios, horario discontinuo,
+        comida incluida, 10 hs extras, 1 franco trabajado, 1 feriado."""
+        empleado = Empleado(
+            categoria="B",
+            antiguedad_anios=8,
+            titulo_secundario=True,
+            horario_discontinuo=True,
+            diario_comida=True,
+        )
+        asistencia = Asistencia(
+            feriados_trabajados=1,
+            nocturnos=8,
+            horas_extras=10,
+            franco_trabajado=1,
+            dias_trabajados=30,
+        )
+        resultado = liquidar(empleado, asistencia, "2026-03")
+
+        # Basico y adicionales porcentuales.
+        self.assertAlmostEqual(resultado["basico"], 1179330.0, places=2)
+        self.assertAlmostEqual(resultado["adicionales_porcentuales"]["horario_discontinuo"], 117933.0, places=2)
+        self.assertAlmostEqual(resultado["adicionales_porcentuales"]["plus_temporada"], 235866.0, places=2)
+
+        # Franco: debe ser 2 x feriado_unitario.
+        feriado_u = resultado["adicionales_variables"]["feriado_unitario"]
+        franco_u = resultado["adicionales_variables"]["franco_unitario"]
+        self.assertAlmostEqual(franco_u, feriado_u * 2, places=2)
+        self.assertAlmostEqual(resultado["adicionales_variables"]["franco_trabajado"], 188692.80, places=2)
+
+        # Hora extra dinamica.
+        self.assertAlmostEqual(resultado["adicionales_variables"]["hora_extra_unitaria"], 11793.30, places=2)
+        self.assertAlmostEqual(resultado["adicionales_variables"]["horas_extras"], 117933.0, places=2)
+
+        # Diario comida sobre 30 dias.
+        self.assertAlmostEqual(resultado["adicionales_fijos"]["diario_comida_0280"], 707598.0, places=2)
+
+        # Totales generales.
+        self.assertAlmostEqual(resultado["total_remunerativo"], 3733548.26, places=2)
+        self.assertAlmostEqual(resultado["neto_estimado"], 2986838.61, places=2)
+
+        # Todos los CODs presentes en items_cod.
+        cods = {item["cod"] for item in resultado["items_cod"]["remunerativos"]}
+        for cod in ("0201", "0214", "0216", "0227", "0229", "0231", "0232",
+                    "0273", "0280", "0281", "0283"):
+            self.assertIn(cod, cods, msg=f"COD {cod} ausente en items_cod")
+
+
 if __name__ == "__main__":
     unittest.main()

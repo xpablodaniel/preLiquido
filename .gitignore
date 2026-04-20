@@ -1,0 +1,13 @@
+# Python virtual env
+.venv/
+
+# Python cache/build artifacts
+__pycache__/
+*.py[cod]
+
+# Local/private payroll artifacts (never push)
+Rec_*.jpg
+planilla*.jpg
+convenio26.jpg
+artJubilacion.jpg
+liquidador_utedyc/local_private/

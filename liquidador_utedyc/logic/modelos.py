@@ -8,10 +8,19 @@ class Empleado:
     categoria: str
     antiguedad_anios: int
     titulo_secundario: bool = False
+    tecnico: bool = False
+    oficial_mantenimiento: bool = False
+    medio_oficial_mantenimiento: bool = False
+    mayor_funcion: int = 0          # 0=sin mayor función, 18/20/25/30 = porcentaje aplicable
+    liquidacion_sueldos: bool = False
     maquina_contable: bool = False
+    maquina_coser: bool = False
+    bonificacion_manual: bool = False
     quebranto_caja: bool = False
     exigencia_operativa: bool = False
     refrigerio: bool = False
+    diario_comida: bool = False
+    diario_desayuno: bool = False
     nocturnidad_fija: bool = False
     permanencia_categoria: bool = False
     zona_fria: bool = False
@@ -19,9 +28,15 @@ class Empleado:
     idiomas: bool = False
     cuota_sindical: bool = False
 
+    _MAYOR_FUNCION_VALIDOS = frozenset({0, 18, 20, 25, 30})
+
     def __post_init__(self) -> None:
         if self.antiguedad_anios < 0:
             raise ValueError("La antiguedad no puede ser negativa")
+        if self.mayor_funcion not in self._MAYOR_FUNCION_VALIDOS:
+            raise ValueError(
+                f"mayor_funcion debe ser uno de {sorted(self._MAYOR_FUNCION_VALIDOS)}"
+            )
 
 
 @dataclass

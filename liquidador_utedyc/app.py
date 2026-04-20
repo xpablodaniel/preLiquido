@@ -12,8 +12,12 @@ st.set_page_config(page_title="Liquidador UTEDYC", layout="wide")
 st.title("Liquidador Domestico UTEDYC 183/92")
 st.caption("Estimacion de liquidacion con base convenio + asistencia del periodo 20 al 20")
 
+COEF_FERIADO_0229 = 2.0
+COEF_ADICIONAL_0281 = 1.0
+ALICUOTA_GANANCIAS = 0.0
+
 meses = sorted(BASICOS.keys())
-categorias = ["A1", "A2", "A2B", "A3", "B", "C", "D"]
+categorias = sorted(BASICOS[meses[-1]].keys())
 feriados_periodo_mes = []
 feriados_periodo_objetivo = []
 
@@ -26,7 +30,7 @@ with col1:
     if comparar:
         mes_objetivo = st.selectbox("Mes objetivo", meses, index=max(0, len(meses) - 2))
         feriados_periodo_objetivo = obtener_feriados_periodo_20_20(mes_objetivo)
-    categoria = st.selectbox("Categoria", categorias, index=6)
+    categoria = st.selectbox("Categoria", categorias, index=categorias.index("D"))
     antiguedad = st.number_input("Anios de antiguedad", min_value=0, max_value=50, value=10)
 with col2:
     titulo = st.checkbox("Titulo secundario", value=True)
@@ -35,24 +39,10 @@ with col2:
     quebranto = st.checkbox("Quebranto de caja (0218)", value=False)
     exigencia_operativa = st.checkbox("Exigencia operativa (0276)", value=False)
     refrigerio = st.checkbox("Refrigerio (0719)", value=False)
-    sindical = st.checkbox("Cuota sindical", value=True)
+    st.caption("Descuento COD 0426 (cuota sindical): obligatorio")
 with col3:
     st.caption(f"Feriados nacionales (periodo 20-20): {len(feriados_periodo_mes)}")
     feriados = st.number_input("Feriados trabajados", min_value=0, max_value=10, value=2)
-    coef_feriado = st.number_input(
-        "Multiplicador COD 0229 (sueldo/25)",
-        min_value=0.1,
-        max_value=3.0,
-        value=2.0,
-        step=0.05,
-    )
-    coef_adicional_feriado = st.number_input(
-        "Multiplicador COD 0281 (base 15000 con arrastre)",
-        min_value=0.0,
-        max_value=2.0,
-        value=1.0,
-        step=0.05,
-    )
     usar_valor_feriado_manual = st.checkbox("Usar valor feriado manual", value=False)
     valor_feriado_manual = None
     if usar_valor_feriado_manual:
@@ -65,7 +55,6 @@ with col3:
         )
     nocturnos = st.number_input("Nocturnos", min_value=0, max_value=31, value=6)
     extras = st.number_input("Horas extras", min_value=0, max_value=200, value=0)
-    ganancias = st.number_input("Alicuota ganancias", min_value=0.0, max_value=1.0, value=0.0, step=0.01)
 
 st.subheader("Conceptos fijos")
 st.caption("0218, 0276 y 0719 se calculan automaticamente sobre la base categoria B del mes.")
@@ -85,7 +74,7 @@ if st.button("Calcular liquidacion", type="primary"):
         exigencia_operativa=exigencia_operativa,
         refrigerio=refrigerio,
         permanencia_categoria=permanencia,
-        cuota_sindical=sindical,
+        cuota_sindical=True,
     )
     asistencia = Asistencia(
         feriados_trabajados=int(feriados),
@@ -98,10 +87,10 @@ if st.button("Calcular liquidacion", type="primary"):
             asistencia,
             mes_base=mes,
             mes_objetivo=mes_objetivo,
-            alicuota_ganancias=float(ganancias),
-            coef_feriado=float(coef_feriado),
+            alicuota_ganancias=ALICUOTA_GANANCIAS,
+            coef_feriado=COEF_FERIADO_0229,
             valor_feriado_manual=float(valor_feriado_manual) if valor_feriado_manual is not None else None,
-            coef_adicional_feriado=float(coef_adicional_feriado),
+            coef_adicional_feriado=COEF_ADICIONAL_0281,
         )
         st.subheader("Comparacion")
         st.json(resultado)
@@ -110,10 +99,10 @@ if st.button("Calcular liquidacion", type="primary"):
             empleado,
             asistencia,
             mes,
-            alicuota_ganancias=float(ganancias),
-            coef_feriado=float(coef_feriado),
+            alicuota_ganancias=ALICUOTA_GANANCIAS,
+            coef_feriado=COEF_FERIADO_0229,
             valor_feriado_manual=float(valor_feriado_manual) if valor_feriado_manual is not None else None,
-            coef_adicional_feriado=float(coef_adicional_feriado),
+            coef_adicional_feriado=COEF_ADICIONAL_0281,
         )
         st.subheader("Resultado")
         st.json(resultado)

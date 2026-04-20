@@ -33,19 +33,50 @@ def calcular_adicionales_porcentuales(empleado: Empleado, mes: str) -> dict:
         "puntualidad": basico_b * ADICIONALES["puntualidad"],
         "antiguedad": basico_b * empleado.antiguedad_anios * ADICIONALES["antiguedad_por_anio"],
         "titulo_secundario": 0.0,
+        "tecnico": 0.0,
+        "oficial_mantenimiento": 0.0,
+        "medio_oficial_mantenimiento": 0.0,
+        "mayor_funcion": 0.0,
+        "liquidacion_sueldos": 0.0,
         "maquina_contable": 0.0,
+        "maquina_coser": 0.0,
+        "bonificacion_manual": 0.0,
         "permanencia_categoria": 0.0,
+        "idiomas": 0.0,
+        "horario_discontinuo": 0.0,
+        "zona_fria": 0.0,
         "plus_temporada": basico_b * _plus_temporada(mes),
     }
 
     if empleado.titulo_secundario:
         detalle["titulo_secundario"] = basico_b * ADICIONALES["titulo_secundario"]
+    if empleado.tecnico:
+        detalle["tecnico"] = basico_b * ADICIONALES["tecnico"]
+    if empleado.oficial_mantenimiento:
+        detalle["oficial_mantenimiento"] = basico_b * ADICIONALES["oficial_mantenimiento"]
+    if empleado.medio_oficial_mantenimiento:
+        detalle["medio_oficial_mantenimiento"] = basico_b * ADICIONALES["medio_oficial_mantenimiento"]
+    if empleado.mayor_funcion:
+        clave = f"mayor_funcion_{empleado.mayor_funcion}"
+        detalle["mayor_funcion"] = basico_b * ADICIONALES[clave]
+    if empleado.liquidacion_sueldos:
+        detalle["liquidacion_sueldos"] = basico_b * ADICIONALES["liquidacion_sueldos"]
     if empleado.maquina_contable:
         detalle["maquina_contable"] = basico_b * ADICIONALES["maquina_contable"]
+    if empleado.maquina_coser:
+        detalle["maquina_coser"] = basico_b * ADICIONALES["maquina_coser"]
+    if empleado.bonificacion_manual:
+        detalle["bonificacion_manual"] = basico_b * ADICIONALES["bonificacion_manual"]
     if empleado.permanencia_categoria:
         detalle["permanencia_categoria"] = basico_b * ADICIONALES["permanencia_categoria"]
+    if empleado.idiomas:
+        detalle["idiomas"] = basico_b * ADICIONALES["idiomas"]
+    if empleado.horario_discontinuo:
+        detalle["horario_discontinuo"] = basico_b * ADICIONALES["horario_discontinuo"]
+    if empleado.zona_fria:
+        detalle["zona_fria"] = basico_b * ADICIONALES["zona_fria"]
 
-    detalle["total"] = sum(detalle.values())
+    detalle["total"] = sum(v for k, v in detalle.items() if k != "total")
     return detalle
 
 
@@ -79,6 +110,14 @@ def calcular_adicionales_variables(
     factor_0281 = max(1, asistencia.feriados_trabajados)
     feriados_0281 = adicional_feriado_unitario * factor_0281
 
+    # COD 0283: hora extra = basico_categoria / 25 / 8 * 2 (tiempo doble, jornada de 8hs).
+    hora_extra_unitaria = basico_categoria / 25 / 8 * 2.0
+    total_horas_extras = asistencia.horas_extras * hora_extra_unitaria
+
+    # Franco trabajado = 2 × feriado_unitario (el descanso trabajado vale doble feriado).
+    franco_unitario = feriado_unitario * 2.0
+    total_franco = asistencia.franco_trabajado * franco_unitario
+
     detalle = {
         "nocturnos": asistencia.nocturnos * tabla["valor_nocturno"],
         "feriado_unitario": feriado_unitario,
@@ -92,30 +131,43 @@ def calcular_adicionales_variables(
         "feriados_nacionales_0229": feriados_0229,
         "adicional_feriado_0281": feriados_0281,
         "feriados_trabajados": feriados_0229 + feriados_0281,
-        "horas_extras": asistencia.horas_extras * tabla["valor_hora_extra"],
+        "hora_extra_unitaria": hora_extra_unitaria,
+        "horas_extras": total_horas_extras,
+        "franco_unitario": franco_unitario,
+        "franco_trabajado": total_franco,
     }
-    detalle["total"] = detalle["nocturnos"] + detalle["feriados_trabajados"] + detalle["horas_extras"]
+    detalle["total"] = (
+        detalle["nocturnos"]
+        + detalle["feriados_trabajados"]
+        + detalle["horas_extras"]
+        + detalle["franco_trabajado"]
+    )
     return detalle
 
 
 def calcular_adicionales_fijos(
     empleado: Empleado,
     mes: str,
+    asistencia: "Asistencia | None" = None,
 ) -> dict:
     basico_b = obtener_basico_b(mes)
+    dias = asistencia.dias_trabajados if asistencia is not None else 30
 
     detalle = {
         "base_calculo_categoria_b": basico_b,
         "quebranto_caja_0218": basico_b * ADICIONALES["quebranto_caja"] if empleado.quebranto_caja else 0.0,
-        (
-            "exigencia_operativa_0276"
-        ): basico_b * ADICIONALES["exigencia_operativa"] if empleado.exigencia_operativa else 0.0,
+        "exigencia_operativa_0276": basico_b * ADICIONALES["exigencia_operativa"] if empleado.exigencia_operativa else 0.0,
         "refrigerio_0719": basico_b * ADICIONALES["refrigerio"] if empleado.refrigerio else 0.0,
+        # Diario comida y desayuno: porcentaje diario sobre basico B * dias trabajados.
+        "diario_comida_0280": basico_b * ADICIONALES["diario_comida"] * dias if empleado.diario_comida else 0.0,
+        "diario_desayuno_0285": basico_b * ADICIONALES["diario_desayuno"] * dias if empleado.diario_desayuno else 0.0,
     }
     detalle["total"] = (
         detalle["quebranto_caja_0218"]
         + detalle["exigencia_operativa_0276"]
         + detalle["refrigerio_0719"]
+        + detalle["diario_comida_0280"]
+        + detalle["diario_desayuno_0285"]
     )
     return detalle
 
@@ -143,7 +195,11 @@ def _crear_items_cod(
         },
         {"cod": "0281", "concepto": "Adicional por feriado", "importe": adicionales_variables["adicional_feriado_0281"]},
         {"cod": "0283", "concepto": "Extras por horario nocturno", "importe": adicionales_variables["nocturnos"]},
+        {"cod": "0231", "concepto": "Franco trabajado", "importe": adicionales_variables["franco_trabajado"]},
+        {"cod": "0232", "concepto": "Horas extras", "importe": adicionales_variables["horas_extras"]},
         {"cod": "0719", "concepto": "Refrigerio", "importe": adicionales_fijos["refrigerio_0719"]},
+        {"cod": "0280", "concepto": "Diario por comida", "importe": adicionales_fijos["diario_comida_0280"]},
+        {"cod": "0285", "concepto": "Diario por desayuno", "importe": adicionales_fijos["diario_desayuno_0285"]},
         {
             "cod": "0720",
             "concepto": "Permanencia categoría",
@@ -165,16 +221,15 @@ def _crear_items_cod(
     }
 
 
-def calcular_descuentos(total_remunerativo: float, cuota_sindical: bool = False, alicuota_ganancias: float = 0.0) -> dict:
+def calcular_descuentos(total_remunerativo: float, alicuota_ganancias: float = 0.0) -> dict:
     detalle = {
         "jubilacion": total_remunerativo * DESCUENTOS["jubilacion"],
         "ley_19032": total_remunerativo * DESCUENTOS["ley_19032"],
         "ley_23660": total_remunerativo * DESCUENTOS["ley_23660"],
-        "cuota_sindical": 0.0,
+        # COD 0426 obligatorio mientras no cambie el marco legal.
+        "cuota_sindical": total_remunerativo * DESCUENTOS["cuota_sindical"],
         "ganancias": 0.0,
     }
-    if cuota_sindical:
-        detalle["cuota_sindical"] = total_remunerativo * DESCUENTOS["cuota_sindical"]
     if alicuota_ganancias > 0:
         detalle["ganancias"] = total_remunerativo * alicuota_ganancias
 
@@ -203,7 +258,7 @@ def liquidar(
         valor_feriado_manual=valor_feriado_manual,
         coef_adicional_feriado=coef_adicional_feriado,
     )
-    adicionales_f = calcular_adicionales_fijos(empleado, mes=mes)
+    adicionales_f = calcular_adicionales_fijos(empleado, mes=mes, asistencia=asistencia)
     feriados_periodo = obtener_feriados_periodo_20_20(mes)
     alertas = []
     if asistencia.feriados_trabajados > len(feriados_periodo):
@@ -214,7 +269,6 @@ def liquidar(
     total_remunerativo = basico + adicionales_p["total"] + adicionales_v["total"] + adicionales_f["total"]
     descuentos = calcular_descuentos(
         total_remunerativo,
-        cuota_sindical=empleado.cuota_sindical,
         alicuota_ganancias=alicuota_ganancias,
     )
     items_cod = _crear_items_cod(basico, adicionales_p, adicionales_v, adicionales_f, descuentos)

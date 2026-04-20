@@ -7,12 +7,17 @@ from logic.calculos import comparar_liquidaciones, liquidar
 from logic.modelos import Asistencia, Empleado
 
 
+COEF_FERIADO_0229 = 2.0
+COEF_ADICIONAL_0281 = 1.0
+ALICUOTA_GANANCIAS = 0.0
+
+
 def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(description="Liquidador UTEDYC 183/92")
     parser.add_argument("--mes", required=True, help="Mes base en formato YYYY-MM")
     parser.add_argument("--mes-objetivo", help="Mes objetivo para comparar, formato YYYY-MM")
     parser.add_argument("--comparar", action="store_true", help="Compara mes base contra mes objetivo")
-    parser.add_argument("--categoria", required=True, help="Categoria (A1, A2, A2B, A3, B, C, D)")
+    parser.add_argument("--categoria", required=True, help="Categoria segun escala vigente del mes")
     parser.add_argument("--antiguedad", type=int, default=0, help="Anios de antiguedad")
     parser.add_argument("--titulo", action="store_true", help="Aplica titulo secundario")
     parser.add_argument("--maquina", action="store_true", help="Aplica maquina contable")
@@ -24,28 +29,14 @@ def parse_args() -> argparse.Namespace:
         help="Aplica adicional por exigencia operativa (COD 0276)",
     )
     parser.add_argument("--refrigerio", action="store_true", help="Aplica refrigerio (COD 0719)")
-    parser.add_argument("--sindical", action="store_true", help="Aplica cuota sindical")
     parser.add_argument("--feriados", type=int, default=0, help="Cantidad de feriados trabajados")
-    parser.add_argument(
-        "--coef-feriado",
-        type=float,
-        default=2.0,
-        help="Multiplicador para COD 0229 sobre la formula sueldo/25",
-    )
     parser.add_argument(
         "--valor-feriado-manual",
         type=float,
         help="Sobrescribe el valor unitario de feriado trabajado",
     )
-    parser.add_argument(
-        "--coef-adicional-feriado",
-        type=float,
-        default=1.0,
-        help="Multiplicador para COD 0281 calculado como porcentaje del basico B",
-    )
     parser.add_argument("--nocturnos", type=int, default=0, help="Cantidad de turnos nocturnos")
     parser.add_argument("--extras", type=int, default=0, help="Cantidad de horas extras")
-    parser.add_argument("--ganancias", type=float, default=0.0, help="Alicuota de ganancias, ej 0.05")
     return parser.parse_args()
 
 
@@ -64,7 +55,7 @@ def main() -> None:
         exigencia_operativa=args.exigencia_operativa,
         refrigerio=args.refrigerio,
         permanencia_categoria=args.permanencia,
-        cuota_sindical=args.sindical,
+        cuota_sindical=True,
     )
     asistencia = Asistencia(
         feriados_trabajados=args.feriados,
@@ -78,20 +69,20 @@ def main() -> None:
             asistencia,
             mes_base=args.mes,
             mes_objetivo=args.mes_objetivo,
-            alicuota_ganancias=args.ganancias,
-            coef_feriado=args.coef_feriado,
+            alicuota_ganancias=ALICUOTA_GANANCIAS,
+            coef_feriado=COEF_FERIADO_0229,
             valor_feriado_manual=args.valor_feriado_manual,
-            coef_adicional_feriado=args.coef_adicional_feriado,
+            coef_adicional_feriado=COEF_ADICIONAL_0281,
         )
     else:
         resultado = liquidar(
             empleado,
             asistencia,
             args.mes,
-            alicuota_ganancias=args.ganancias,
-            coef_feriado=args.coef_feriado,
+            alicuota_ganancias=ALICUOTA_GANANCIAS,
+            coef_feriado=COEF_FERIADO_0229,
             valor_feriado_manual=args.valor_feriado_manual,
-            coef_adicional_feriado=args.coef_adicional_feriado,
+            coef_adicional_feriado=COEF_ADICIONAL_0281,
         )
 
     print(json.dumps(resultado, indent=2, ensure_ascii=False))
