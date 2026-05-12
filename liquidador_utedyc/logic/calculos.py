@@ -1,6 +1,7 @@
 """Pure functions for salary settlement calculations."""
 
 from data.adicionales import ADICIONALES, CONCEPTOS_FIJOS_DEFAULT, DESCUENTOS, VARIABLES_DEFAULT
+from data.coeficientes_mensuales import COEFICIENTES_MENSUALES
 from data.escalas import BASICOS
 from data.feriados import obtener_feriados_periodo_20_20
 from logic.modelos import Asistencia, Empleado
@@ -90,25 +91,39 @@ def calcular_adicionales_variables(
     valor_feriado_manual: float | None = None,
     coef_adicional_feriado: float | None = None,
 ) -> dict:
+    coef_mes = COEFICIENTES_MENSUALES.get(mes, {})
     tabla = valores or VARIABLES_DEFAULT
+
+    # COD 0229 – feriado unitario: coeficiente mensual > override manual > fórmula.
     if valor_feriado_manual is not None:
         feriado_unitario = float(valor_feriado_manual)
+    elif "feriado_unitario_0229" in coef_mes:
+        feriado_unitario = coef_mes["feriado_unitario_0229"]
     else:
-        # COD 0229: sueldo mensual / 25, con multiplicador opcional para calibracion.
+        # Fórmula de aproximación: sueldo mensual / 25.
         feriado_unitario = basico_categoria * CONCEPTOS_FIJOS_DEFAULT["coef_feriado_229"] * coef_feriado
 
     mes_base_281 = CONCEPTOS_FIJOS_DEFAULT["mes_base_281"]
     monto_base_281 = float(CONCEPTOS_FIJOS_DEFAULT["monto_base_281"])
     basico_b_referencia = obtener_basico_b(mes_base_281)
     factor_arrastre_281 = basico_b / basico_b_referencia if basico_b_referencia else 1.0
-
-    multiplicador_0281 = 1.0 if coef_adicional_feriado is None else coef_adicional_feriado
     adicional_feriado_base_0281 = monto_base_281 * factor_arrastre_281
-    adicional_feriado_unitario = adicional_feriado_base_0281 * multiplicador_0281
+
+    # COD 0281 – unitario: coeficiente mensual > override manual > fórmula con arrastre.
+    if "adicional_feriado_unitario_0281" in coef_mes:
+        adicional_feriado_unitario = coef_mes["adicional_feriado_unitario_0281"]
+        multiplicador_0281 = 1.0  # ya está el unitario real; se multiplica por factor_0281
+    else:
+        multiplicador_0281 = 1.0 if coef_adicional_feriado is None else coef_adicional_feriado
+        adicional_feriado_unitario = adicional_feriado_base_0281 * multiplicador_0281
+
     feriados_0229 = asistencia.feriados_trabajados * feriado_unitario
     # Politica empresa: COD 0281 se liquida todos los meses, y multiplica por cantidad si hay mas de un feriado.
     factor_0281 = max(1, asistencia.feriados_trabajados)
     feriados_0281 = adicional_feriado_unitario * factor_0281
+
+    # COD 0283 – nocturno: coeficiente mensual > tabla (VARIABLES_DEFAULT).
+    valor_nocturno = coef_mes.get("valor_nocturno_0283", tabla["valor_nocturno"])
 
     # COD 0283: hora extra = basico_categoria / 25 / 8 * 2 (tiempo doble, jornada de 8hs).
     hora_extra_unitaria = basico_categoria / 25 / 8 * 2.0
@@ -119,7 +134,7 @@ def calcular_adicionales_variables(
     total_franco = asistencia.franco_trabajado * franco_unitario
 
     detalle = {
-        "nocturnos": asistencia.nocturnos * tabla["valor_nocturno"],
+        "nocturnos": asistencia.nocturnos * valor_nocturno,
         "feriado_unitario": feriado_unitario,
         "monto_base_281": monto_base_281,
         "mes_base_281": mes_base_281,
@@ -221,17 +236,21 @@ def _crear_items_cod(
     }
 
 
-def calcular_descuentos(total_remunerativo: float, alicuota_ganancias: float = 0.0) -> dict:
+def calcular_descuentos(
+    total_remunerativo: float,
+    alicuota_ganancias: float = 0.0,
+    retenciones_ganancias_6982: float = 0.0,
+) -> dict:
     detalle = {
         "jubilacion": total_remunerativo * DESCUENTOS["jubilacion"],
         "ley_19032": total_remunerativo * DESCUENTOS["ley_19032"],
         "ley_23660": total_remunerativo * DESCUENTOS["ley_23660"],
         # COD 0426 obligatorio mientras no cambie el marco legal.
         "cuota_sindical": total_remunerativo * DESCUENTOS["cuota_sindical"],
-        "ganancias": 0.0,
+        # COD 6982 – Retención de ganancias 4ª categoría.
+        # Puede ser un importe fijo mensual (desde coef. mensuales) o % alícuota.
+        "ganancias": retenciones_ganancias_6982 if retenciones_ganancias_6982 != 0.0 else (total_remunerativo * alicuota_ganancias),
     }
-    if alicuota_ganancias > 0:
-        detalle["ganancias"] = total_remunerativo * alicuota_ganancias
 
     detalle["total"] = sum(detalle.values())
     return detalle
@@ -245,6 +264,7 @@ def liquidar(
     coef_feriado: float = 2.0,
     valor_feriado_manual: float | None = None,
     coef_adicional_feriado: float | None = None,
+    retenciones_ganancias_6982: float | None = None,
 ) -> dict:
     basico = obtener_basico(empleado.categoria, mes)
     basico_b = obtener_basico_b(mes)
@@ -267,9 +287,20 @@ def liquidar(
         )
 
     total_remunerativo = basico + adicionales_p["total"] + adicionales_v["total"] + adicionales_f["total"]
+    
+    # Retención de ganancias 6982: coeficiente mensual > override manual > alícuota.
+    coef_mes = COEFICIENTES_MENSUALES.get(mes, {})
+    if retenciones_ganancias_6982 is not None:
+        retencion_final = retenciones_ganancias_6982
+    elif "retenciones_ganancias_6982" in coef_mes:
+        retencion_final = coef_mes["retenciones_ganancias_6982"]
+    else:
+        retencion_final = 0.0
+    
     descuentos = calcular_descuentos(
         total_remunerativo,
         alicuota_ganancias=alicuota_ganancias,
+        retenciones_ganancias_6982=retencion_final,
     )
     items_cod = _crear_items_cod(basico, adicionales_p, adicionales_v, adicionales_f, descuentos)
 

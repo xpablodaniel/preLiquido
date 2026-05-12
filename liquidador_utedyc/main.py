@@ -37,6 +37,17 @@ def parse_args() -> argparse.Namespace:
     )
     parser.add_argument("--nocturnos", type=int, default=0, help="Cantidad de turnos nocturnos")
     parser.add_argument("--extras", type=int, default=0, help="Cantidad de horas extras")
+    parser.add_argument(
+        "--ganancias-fijo",
+        type=float,
+        help="Importe fijo mensual de retención de ganancias (COD 6982)",
+    )
+    parser.add_argument(
+        "--ganancias-alicuota",
+        type=float,
+        default=0.0,
+        help="Alícuota % de ganancias si no hay coef. mensual (defecto 0)",
+    )
     return parser.parse_args()
 
 
@@ -69,7 +80,7 @@ def main() -> None:
             asistencia,
             mes_base=args.mes,
             mes_objetivo=args.mes_objetivo,
-            alicuota_ganancias=ALICUOTA_GANANCIAS,
+            alicuota_ganancias=args.ganancias_alicuota,
             coef_feriado=COEF_FERIADO_0229,
             valor_feriado_manual=args.valor_feriado_manual,
             coef_adicional_feriado=COEF_ADICIONAL_0281,
@@ -79,10 +90,11 @@ def main() -> None:
             empleado,
             asistencia,
             args.mes,
-            alicuota_ganancias=ALICUOTA_GANANCIAS,
+            alicuota_ganancias=args.ganancias_alicuota,
             coef_feriado=COEF_FERIADO_0229,
             valor_feriado_manual=args.valor_feriado_manual,
             coef_adicional_feriado=COEF_ADICIONAL_0281,
+            retenciones_ganancias_6982=args.ganancias_fijo,
         )
 
     print(json.dumps(resultado, indent=2, ensure_ascii=False))
