@@ -26,7 +26,103 @@ El proyecto ya contempla:
 - descuento sindical obligatorio según criterio actual del proyecto,
 - simulación desde CLI,
 - simulación desde interfaz Streamlit,
-- base preparada para calibrar contra recibos reales.
+- base preparada para calibrar contra recibos reales,
+- **resumen legible en consola con formato amigable**,
+- **generación de recibos HTML profesionales**,
+- **exportación a PDF** (con WeasyPrint),
+- **análisis automático de variaciones**.
+
+## Funcionalidades de Presentación
+
+### Resumen Legible en Consola
+
+Transforma los datos JSON técnicos en un formato legible y amigable:
+
+```
+==================================================
+LIQUIDACIÓN DE SUELDO - 2026-05 / CATEGORÍA D
+==================================================
+
+DETALLE DE REMUNERACIONES:
+--------------------------------------------------
+Sueldo básico:                      $ 1.150.520
+Adicionales % (antiguedad, puntualidad, etc):    $ 719.391
+Variables (nocturnos, feriados, extras):         $ 552.329
+...
+```
+
+### Recibo HTML/PDF
+
+Genera recibos profesionales que respetan la estructura tradicional de recibos de sueldo con:
+
+- Encabezado con datos del empleado y período
+- Tabla de conceptos remunerativos agrupados
+- Tabla de descuentos
+- Totales formateados
+- Análisis automático de variaciones
+- Diseño responsive (imprime bien en A4)
+
+### Análisis Automático
+
+Detecta automáticamente:
+
+- Variaciones significativas vs. mes anterior
+- Presencia de plus de temporada
+- Peso de nocturnidad
+- Feriados trabajados
+- Composición de descuentos
+
+## Uso
+
+### Interfaz Streamlit (Recomendada)
+
+```bash
+streamlit run app.py
+```
+
+Ofrece:
+1. **Tab "Resumen Amigable"** - Visualización de datos formateada
+2. **Tab "Recibo Formal"** - Preview HTML + botones de descarga
+3. **Tab "Datos JSON"** - Datos crudos para análisis avanzado
+
+### Línea de Comandos
+
+#### Resumen legible:
+```bash
+python main.py --mes 2026-05 --categoria D --antiguedad 10 \
+  --titulo --maquina --permanencia --nocturnos 6 \
+  --formato resumen
+```
+
+#### Generar HTML:
+```bash
+python main.py --mes 2026-05 --categoria D --antiguedad 10 \
+  --titulo --maquina --permanencia --nocturnos 6 \
+  --formato html --output recibo_mayo.html \
+  --nombre "Juan Perez" --cuil "20-12345678-9"
+```
+
+#### Generar PDF:
+```bash
+python main.py --mes 2026-05 --categoria D --antiguedad 10 \
+  --titulo --maquina --permanencia --nocturnos 6 \
+  --formato pdf --output recibo_mayo.pdf \
+  --nombre "Juan Perez" --cuil "20-12345678-9"
+```
+
+### Instalación de Dependencias
+
+```bash
+pip install -r requirements.txt
+```
+
+Si deseas usar la funcionalidad de PDF, asegúrate de tener WeasyPrint instalado:
+
+```bash
+pip install weasyprint
+```
+
+En sistemas Linux/Mac, WeasyPrint requiere librerías gráficas adicionales. Ver: https://weasyprint.org/
 
 ## Objetivo de evolución
 

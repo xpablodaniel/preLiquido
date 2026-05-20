@@ -2,9 +2,12 @@
 
 import argparse
 import json
+from pathlib import Path
 
 from logic.calculos import comparar_liquidaciones, liquidar
 from logic.modelos import Asistencia, Empleado
+from logic.presentacion import resumen_legible, generar_observaciones
+from logic.renderizado import renderizar_recibo_html, guardar_html, generar_pdf_desde_html
 
 
 COEF_FERIADO_0229 = 2.0
@@ -47,6 +50,28 @@ def parse_args() -> argparse.Namespace:
         type=float,
         default=0.0,
         help="Alícuota % de ganancias si no hay coef. mensual (defecto 0)",
+    )
+    parser.add_argument(
+        "--formato",
+        choices=["json", "resumen", "html", "pdf"],
+        default="json",
+        help="Formato de salida (default: json)",
+    )
+    parser.add_argument(
+        "--output",
+        help="Ruta para guardar la salida (si no se especifica, imprime en consola)",
+    )
+    parser.add_argument(
+        "--nombre",
+        help="Nombre del empleado (para recibos HTML/PDF)",
+    )
+    parser.add_argument(
+        "--cuil",
+        help="C.U.I.L. del empleado (para recibos HTML/PDF)",
+    )
+    parser.add_argument(
+        "--lugar-trabajo",
+        help="Lugar de trabajo (para recibos HTML/PDF)",
     )
     return parser.parse_args()
 
@@ -97,7 +122,40 @@ def main() -> None:
             retenciones_ganancias_6982=args.ganancias_fijo,
         )
 
-    print(json.dumps(resultado, indent=2, ensure_ascii=False))
+    # Procesar salida según formato
+    if args.formato == "json":
+        output = json.dumps(resultado, indent=2, ensure_ascii=False)
+    elif args.formato == "resumen":
+        output = resumen_legible(resultado)
+        output += "\n\n📊 ANÁLISIS:\n"
+        output += generar_observaciones(resultado)
+    elif args.formato in ("html", "pdf"):
+        empleado_datos = {
+            "nombre": args.nombre or "",
+            "cuil": args.cuil or "",
+            "lugar_trabajo": args.lugar_trabajo or "",
+        }
+        output = renderizar_recibo_html(resultado, empleado_datos=empleado_datos)
+    else:
+        raise ValueError(f"Formato no reconocido: {args.formato}")
+
+    # Guardar o imprimir
+    if args.output:
+        output_path = Path(args.output)
+        
+        if args.formato == "html":
+            guardar_html(output, output_path)
+            print(f"✓ Recibo HTML guardado en: {output_path}")
+        elif args.formato == "pdf":
+            output_path = output_path.with_suffix(".pdf") if output_path.suffix != ".pdf" else output_path
+            generar_pdf_desde_html(output, output_path)
+            print(f"✓ PDF guardado en: {output_path}")
+        else:
+            output_path.parent.mkdir(parents=True, exist_ok=True)
+            output_path.write_text(output, encoding="utf-8")
+            print(f"✓ Salida guardada en: {output_path}")
+    else:
+        print(output)
 
 
 if __name__ == "__main__":

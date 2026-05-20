@@ -1,0 +1,214 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <title>Recibo de Liquidación de Sueldo - UTEDYC</title>
+  <style>
+    :root {
+      color-scheme: light;
+    }
+    * { box-sizing: border-box; }
+    html, body {
+      background: #ffffff !important;
+      color: #111111 !important;
+    }
+    body {
+      font-family: Arial, sans-serif;
+      font-size: 11px;
+      margin: 20px;
+    }
+    h1 {
+      font-size: 14px;
+      text-align: center;
+      margin-bottom: 4px;
+    }
+    h2 {
+      font-size: 12px;
+      margin: 10px 0 4px 0;
+    }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-bottom: 6px;
+    }
+    th, td {
+      border: 1px solid #000;
+      padding: 2px 4px;
+    }
+    th {
+      background-color: #f0f0f0;
+      text-align: left;
+    }
+    .no-border td {
+      border: none;
+      padding: 2px 4px;
+    }
+    .right { text-align: right; }
+    .center { text-align: center; }
+    .small { font-size: 10px; }
+    .totales td {
+      border: none;
+      padding: 2px 4px;
+    }
+    .firma {
+      margin-top: 12px;
+      width: 100%;
+    }
+    .firma td {
+      border: none;
+      padding-top: 20px;
+      text-align: center;
+      font-size: 10px;
+    }
+    .firma-linea {
+      border-top: 1px solid #000;
+      width: 80%;
+      margin: 0 auto 2px auto;
+      height: 0;
+    }
+  </style>
+</head>
+<body>
+
+  <h1>RECIBO DE LIQUIDACION DE SUELDO</h1>
+  <div class="center small">
+    Empleados Unidades Turisticas y Hoteleras de Suteba<br>
+  </div>
+
+  <table>
+    <tr>
+      <th>LEGAJO</th>
+      <th>APELLIDO Y NOMBRE</th>
+      <th>C.U.I.L.</th>
+      <th>CATEGORIA</th>
+    </tr>
+    <tr>
+      <td></td>
+      <td>{{ encabezado.empleado.nombre or "" }}</td>
+      <td>{{ encabezado.empleado.cuil or "" }}</td>
+      <td>{{ encabezado.categoria }}</td>
+    </tr>
+  </table>
+
+  <table>
+    <tr>
+      <th>LUGAR DE TRABAJO</th>
+      <th>PERIODO ABONADO</th>
+      <th>FECHA DE GENERACION</th>
+    </tr>
+    <tr>
+      <td>{{ encabezado.empleado.lugar_trabajo or "" }}</td>
+      <td>{{ encabezado.mes_legible }}</td>
+      <td>{{ encabezado.fecha_generacion }}</td>
+    </tr>
+  </table>
+
+  <h2>DESCRIPCION DE CONCEPTOS</h2>
+  <table>
+    <tr>
+      <th>DESCRIPCION</th>
+      <th>COD.</th>
+      <th>UNIDADES</th>
+      <th>REMUNERACIONES</th>
+      <th>DESCUENTOS</th>
+    </tr>
+
+    {% for item in conceptos.basicos %}
+    <tr>
+      <td>{{ item.concepto }}</td>
+      <td>{{ item.cod }}</td>
+      <td class="center">-</td>
+      <td class="right">{{ item.importe | moneda }}</td>
+      <td class="right">-</td>
+    </tr>
+    {% endfor %}
+
+    {% for item in conceptos.porcentuales %}
+    <tr>
+      <td>{{ item.concepto }}</td>
+      <td>{{ item.cod }}</td>
+      <td class="center">-</td>
+      <td class="right">{{ item.importe | moneda }}</td>
+      <td class="right">-</td>
+    </tr>
+    {% endfor %}
+
+    {% for item in conceptos.variables %}
+    <tr>
+      <td>{{ item.concepto }}</td>
+      <td>{{ item.cod }}</td>
+      <td class="center">-</td>
+      <td class="right">{{ item.importe | moneda }}</td>
+      <td class="right">-</td>
+    </tr>
+    {% endfor %}
+
+    {% for item in conceptos.fijos %}
+    <tr>
+      <td>{{ item.concepto }}</td>
+      <td>{{ item.cod }}</td>
+      <td class="center">-</td>
+      <td class="right">{{ item.importe | moneda }}</td>
+      <td class="right">-</td>
+    </tr>
+    {% endfor %}
+
+    {% for item in conceptos.descuentos if item.importe > 0 %}
+    <tr>
+      <td>{{ item.concepto }}</td>
+      <td>{{ item.cod }}</td>
+      <td class="center">-</td>
+      <td class="right">-</td>
+      <td class="right">{{ item.importe | moneda }}</td>
+    </tr>
+    {% endfor %}
+  </table>
+
+  <table class="totales">
+    <tr>
+      <td class="right"><strong>Total Remunerativo:</strong></td>
+      <td class="right" style="width: 160px;">{{ conceptos.totales.total_remunerativo | moneda }}</td>
+    </tr>
+    <tr>
+      <td class="right"><strong>Total Descuentos:</strong></td>
+      <td class="right">-{{ conceptos.totales.total_descuentos | moneda }}</td>
+    </tr>
+    <tr>
+      <td class="right"><strong>NETO A PERCIBIR:</strong></td>
+      <td class="right"><strong>{{ conceptos.totales.neto_estimado | moneda }}</strong></td>
+    </tr>
+  </table>
+
+  <table class="no-border">
+    <tr>
+      <td class="small">
+        <strong>Observaciones:</strong>
+        {{ observaciones }}
+      </td>
+    </tr>
+  </table>
+
+  <table class="no-border small">
+    <tr>
+      <td>
+        El sindicato reconoce la autenticidad del presente documento.<br>
+        Este documento fue generado automaticamente por el Liquidador UTEDYC.
+      </td>
+    </tr>
+  </table>
+
+  <table class="firma">
+    <tr>
+      <td>
+        <div class="firma-linea"></div>
+        Firma del Empleado
+      </td>
+      <td>
+        <div class="firma-linea"></div>
+        Firma del Empleador / Sindical
+      </td>
+    </tr>
+  </table>
+
+</body>
+</html>

@@ -1,0 +1,219 @@
+🧭 RESUMEN INTEGRAL PARA LA PRÓXIMA SESIÓN
+
+
+Con este documento ya podemos dejar preparado un resumen integral para la próxima sesión, donde vamos a integrar:
+
+Vacaciones (segunda quincena de junio) 30 dias de acuerdo al convenio y la antiguedad
+
+Plus vacacional (28% del básico)
+
+SAC primer semestre (cód. 1251)
+
+SAC segundo semestre (cód. 1252)
+
+Adelantos SAC (cód. 0797)
+
+Ajustes SAC (cód. 0821)
+
+
+
+🌴 1) VACACIONES – SEGUNDA QUINCENA DE JUNIO
+En tu lugar de trabajo:
+
+Las vacaciones se otorgan en la segunda quincena de junio.
+
+Se pagan en el recibo de junio.
+
+El cálculo depende del básico del mes anterior (mayo).
+
+Fórmula UTEDYC (confirmada por tus recibos):
+Vacaciones
+=
+(
+b
+a
+ˊ
+sico
+25
+)
+×
+d
+ı
+ˊ
+as
+×
+1.20
+Datos que necesitaremos:
+Básico de mayo
+
+Días de vacaciones según antigüedad
+
+Si hay adicionales que integran la base (en tu caso: NO, solo básico)
+
+🌞 2) PLUS VACACIONAL – JUNIO
+
+
+PLUS VACACIONAL = 28% del básico
+
+
+
+Fórmula:
+Plus Vacacional
+=
+b
+a
+ˊ
+sico
+×
+0.28
+Código real:
+0255 – PLUS VACACIONAL
+
+Descuentos:
+Jubilación 11%
+
+Ley 19032 3%
+
+Ley 23660 3%
+
+Cuota sindical 3%
+Total: 20%
+
+
+
+💰 3) AGUINALDO (SAC) – JUNIO
+En tu trabajo, el aguinaldo se paga:
+
+inmediatamente después de las vacaciones
+
+junto con el sueldo del mes
+
+en el recibo de junio
+
+Cómo liquida tu empleador el SAC (según este recibo de diciembre 2025)
+✔ Código 1252 – SAC Segundo Semestre
+Monto: 1.516.288,46
+
+Este es el SAC bruto real, antes de restar adelantos.
+
+✔ Código 0797 – Adelantos cobrados SAC
+Monto: 1.213.030,78
+
+
+✔ Código 0821 – Ajuste 2° Cuota SAC
+Monto: 166.736,93
+
+Este ajuste aparece cuando:
+
+el SAC real calculado al cierre del semestre
+
+es mayor al total de adelantos ya pagados
+
+Entonces te pagan la diferencia.
+
+🧠 3) Fórmula real del SAC en tu trabajo
+Con este recibo podemos reconstruir la fórmula exacta:
+
+1) SAC bruto real (cód. 1252)
+𝑆
+𝐴
+𝐶
+_
+𝑟
+𝑒
+𝑎
+𝑙
+=
+1
+2
+×
+max
+⁡
+(
+remunerativos del semestre
+)
+2) Adelantos SAC (cód. 0797)
+Se paga antes de navidad
+
+3) Ajuste SAC (cód. 0821)
+𝐴
+𝑗
+𝑢
+𝑠
+𝑡
+𝑒
+=
+𝑆
+𝐴
+𝐶
+_
+𝑟
+𝑒
+𝑎
+𝑙
+−
+𝐴
+𝑑
+𝑒
+𝑙
+𝑎
+𝑛
+𝑡
+𝑜
+𝑠
+_
+𝑝
+𝑎
+𝑔
+𝑎
+𝑑
+𝑜
+𝑠
+Si el ajuste es positivo → aparece como remuneración.
+Si fuera negativo → aparece como descuento (no es tu caso).
+
+📌 4) ¿Qué significa esto para tu liquidador?
+Tu sistema deberá generar automáticamente:
+
+✔ SAC bruto (1252)
+Calculado con tu fórmula real.
+
+✔ Adelantos SAC (0797)
+Si el usuario los carga o si los tomamos del historial.
+
+✔ Ajuste SAC (0821)
+Calculado automáticamente:
+
+python
+ajuste = sac_real - adelantos_sac
+✔ Integración en el recibo HTML
+Tu plantilla ya está lista para mostrarlo.
+
+🧩 5) ¿Qué dejamos preparado para la próxima sesión?
+A) Módulo SAC completo
+calcular_sac_real(historial)
+
+calcular_adelantos_sac(historial)
+
+calcular_ajuste_sac(sac_real, adelantos)
+
+integración en la lista de conceptos
+
+integración en el recibo
+
+integración en el resumen amigable
+
+B) Módulo Vacaciones
+vacaciones
+
+plus vacacional
+
+integración del mes
+
+C) Lógica automática para junio y diciembre
+junio → vacaciones + plus vacacional + SAC 1er semestre
+
+diciembre → SAC 2do semestre + ajustes + adelantos
+
+D) Historial JSON
+Para que el SAC se calcule solo.
